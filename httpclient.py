@@ -23,6 +23,8 @@ import socket
 import re
 # you may use urllib to encode data appropriately
 import urllib.parse
+from urllib.parse import urlparse
+
 
 def help():
     print("httpclient.py [GET/POST] [URL]\n")
@@ -33,7 +35,13 @@ class HTTPResponse(object):
         self.body = body
 
 class HTTPClient(object):
-    #def get_host_port(self,url):
+    def get_host_port(self,url):
+        u = urlparse(url)
+        host = u.hostname
+        port = u.port
+        if port == None:
+            port = 80
+        return (host, port)
 
     def connect(self, host, port):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -41,13 +49,16 @@ class HTTPClient(object):
         return None
 
     def get_code(self, data):
-        return None
+        d = data.split()
+        return int(d[1])
 
     def get_headers(self,data):
-        return None
+        d = data.split("\r\n\r\n")
+        return d[0]
 
     def get_body(self, data):
-        return None
+        d = data.split("\r\n\r\n")
+        return d[1]
     
     def sendall(self, data):
         self.socket.sendall(data.encode('utf-8'))
@@ -68,8 +79,22 @@ class HTTPClient(object):
         return buffer.decode('utf-8')
 
     def GET(self, url, args=None):
-        code = 500
-        body = ""
+        # get the host and port
+        host, port = self.get_host_port(url)
+        # make the connection
+        self.connect(host, port)
+        # make and send the request
+        u = urlparse(url)
+        request = "GET "+u.path+" HTTP/1.1\r\nHost: "+host+"\r\nAccept: */*\r\nConnection: Close\r\n\r\n"
+        self.sendall(request)
+        # get the response
+        response = self.recvall(self.socket)
+        print(request)
+        print(response)
+        # get the code and body of response
+        code = self.get_code(response)
+        body = self.get_body(response)
+
         return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
