@@ -37,8 +37,7 @@ class HTTPResponse(object):
         self.__str__()
     
     def __str__(self):
-        print(self.code)
-        print(self.body)
+        return (str(self.code)+"\n"+self.body)
 
 class HTTPClient(object):
     def get_host_port(self,url):
@@ -74,7 +73,6 @@ class HTTPClient(object):
     def close(self):
         self.socket.close()
 
-    # to handle 4XX errors
     def get_path(self, url):
         u = urlparse(url)
         if u.path == '':
@@ -97,7 +95,18 @@ class HTTPClient(object):
         # get the host and port
         host, port = self.get_host_port(url)
         # make the connection
-        self.connect(host, port)
+        try:
+            self.connect(host, port)
+        except Exception as e:
+            body ='''HTTP/1.1 404 Not Found\r\n
+            <html>
+            <body>
+            <center>
+            <h3>Error 404: URL not found</h3>
+            </center>
+            </body>
+            </html>'''
+            return HTTPResponse(int(404), body)
         # make and send the request
         request = "GET "+self.get_path(url)+" HTTP/1.1\r\nHost: "+host+"\r\nAccept: */*\r\nConnection: Close\r\n\r\n"
         self.sendall(request)
@@ -113,7 +122,18 @@ class HTTPClient(object):
         # get the host and port
         host, port = self.get_host_port(url)
         # make the connection
-        self.connect(host, port)
+        try: 
+            self.connect(host, port)
+        except Exception as e:
+            body ='''HTTP/1.1 404 Not Found\r\n
+            <html>
+            <body>
+            <center>
+            <h3>Error 404: URL not found</h3>
+            </center>
+            </body>
+            </html>'''
+            return HTTPResponse(int(404), body)
         # make and send the request
         request = "POST "+self.get_path(url)+" HTTP/1.1\r\nHost: "+host+"\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: "
         if args:
